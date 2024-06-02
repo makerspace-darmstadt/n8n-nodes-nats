@@ -10,7 +10,8 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
-import { jsNatsConnection } from './common';
+import Container from 'typedi';
+import { NatsService } from '../Nats.service';
 
 export class JetStreamTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -175,8 +176,9 @@ export class JetStreamTrigger implements INodeType {
 
 		let acknowledgeMode = options.acknowledge ? options.acknowledge : 'immediately';
 
-		const jetStream = await jsNatsConnection(this, 0);
-		const jsConsumer = await jetStream.js.consumers.get(stream, consumer);
+		const nats = await Container.get(NatsService).getJetStream(this)
+
+		const jsConsumer = await nats.js.consumers.get(stream, consumer);
 		const messages = await jsConsumer.consume({ max_messages: parallelMessages });
 
 		const consume = async () => {
@@ -253,9 +255,8 @@ export class JetStreamTrigger implements INodeType {
 		consume();
 
 		const closeFunction = async () => {
-			await messages.close();
-			await jetStream.nats.drain();
-			await jetStream.nats.close();
+			await messages.close(); //todo error handling
+			nats[Symbol.dispose]()
 		};
 
 		return {
