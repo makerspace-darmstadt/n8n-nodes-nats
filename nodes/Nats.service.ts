@@ -8,7 +8,7 @@ type ConnectionEntry = {
 	id: string,
 	connection: NatsConnection,
 	refCount: number,
-	timer?: string | number | NodeJS.Timeout
+	timer?: string | number | NodeJS.Timeout,
 }
 
 const idleTimeout = 180_000
@@ -18,6 +18,7 @@ export class NatsService {
 
 	private connections = new Map<string, ConnectionEntry>()
 	private registry = new FinalizationRegistry(this.releaseConnection)
+	private counter = 0;
 
 	constructor() {
 	}
@@ -28,25 +29,30 @@ export class NatsService {
 		//hack use the connection name as the id
 		credentials ??= await func.getCredentials('natsApi', 0)
 		const options = natsConnectionOptions(credentials)
-		const id = options.name ? options.name : func.getExecutionId()
+		let cid = options.name ? options.name : func.getExecutionId()
 
-		let entry = this.connections.get(id)
+		let entry = this.connections.get(cid)
+
+		if(entry && entry.connection.isClosed()) {
+			entry = undefined //reconnect
+		}
+
 		if (!entry) {
 			const connection = await connect(options)
 			entry = {
-				id: id,
+				id: `${cid}-${this.counter++}`, //entry Id
 				connection: connection,
-				refCount: 1
+				refCount: 1,
 			}
-			this.connections.set(id, entry)
+			this.connections.set(cid, entry)
 		} else if (entry.refCount++ == 0 && entry.timer) {
 			clearTimeout(entry.timer)
 			entry.timer = undefined
 		}
 
-		const token = { id: id }
+		const token = { id: entry.id }
 		const handle = new NatsConnectionHandle(this, entry.connection, token)
-		this.registry.register(handle, id, token)
+		this.registry.register(handle, token.id, token)
 
 		return handle
 	}
@@ -85,17 +91,30 @@ export class NatsService {
 		}
 	}
 
+	private releaseConnection(entryId: string) {
+		const i = entryId.lastIndexOf('-');
+		const cid = entryId.substring(i+1)
 
+		const entry = this.connections.get(cid)
+		if(!entry || entry.id != entryId) {
+			return
+		}
 
-	private releaseConnection(id: string) {
-		const entry = this.connections.get(id)
-		if (entry && entry.refCount > 0 && --entry.refCount == 0) {
-			entry.timer = setTimeout((list, entry) => {
+		if(entry.connection.isClosed()) {
+			this.connections.delete(cid)
+			return
+		}
+
+		if (entry.refCount > 0 && --entry.refCount == 0) {
+			entry.timer = setTimeout((list, cid, entry) => {
 				if (entry.refCount == 0) {
-					list.delete(entry.id)
+					const current = list.get(cid)
+					if(current && current.id == entry.id) {
+						list.delete(cid)
+					}
 					entry.connection.drain()
 				}
-			}, idleTimeout, this.connections, entry);
+			}, idleTimeout, this.connections, cid, entry);
 		}
 	}
 }
