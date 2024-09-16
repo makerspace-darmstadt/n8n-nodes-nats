@@ -8,3 +8,4 @@ export const natsConnection = async (func: IAllExecuteFunctions, idx: number): P
 
 	return connect(options)
 }
+

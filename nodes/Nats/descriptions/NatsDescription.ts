@@ -14,6 +14,12 @@ export const natsOperations: INodeProperties[] = [
 				description: 'Publish in a subject',
 				action: 'Publish in a subject',
 			},
+			{
+				name: 'Request',
+				value: 'request',
+				description: 'Request on a subject',
+				action: 'Request on a subject',
+			},
 		],
 	},
 ];
@@ -31,9 +37,9 @@ export const natsDescription: INodeProperties[] = [
 		placeholder: 'Subject',
 		required: true,
 		displayOptions: {
-			show: {
-				operation: ['publish'],
-			},
+			//show: {
+				//operation: ['publish', 'request'],
+			//},
 		},
 	},
 	{
@@ -61,7 +67,7 @@ export const natsDescription: INodeProperties[] = [
 		placeholder: 'Payload',
 		displayOptions: {
 			show: {
-				operation: ['publish'],
+				//operation: ['publish'],
 				contentType: ['string'],
 			},
 		},
@@ -74,7 +80,7 @@ export const natsDescription: INodeProperties[] = [
 		placeholder: 'data',
 		displayOptions: {
 			show: {
-				operation: ['publish'],
+				//operation: ['publish'],
 				contentType: ['binaryData'],
 			},
 		},
@@ -85,9 +91,9 @@ export const natsDescription: INodeProperties[] = [
 		placeholder: 'Add Header',
 		type: 'fixedCollection',
 		displayOptions: {
-			show: {
-				operation: ['publish'],
-			},
+			// show: {
+			// 	operation: ['publish'],
+			// },
 		},
 		typeOptions: {
 			multipleValues: true,
@@ -113,5 +119,56 @@ export const natsDescription: INodeProperties[] = [
 				],
 			},
 		]
-	}
+	},
+	{
+		displayName: 'Options',
+		name: 'options',
+		type: 'collection',
+		default: {},
+		placeholder: 'Add Option',
+		options: [
+			{
+				displayName: 'Content Is Binary',
+				name: 'contentIsBinary',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to save the content as binary',
+			},
+			{
+				displayName: 'JSON Parse Body',
+				name: 'jsonParseBody',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to parse the body to an object',
+			},
+			{
+				displayName: 'Max Replies',
+				name: 'replies',
+				type: 'number',
+				default: false,
+				description: 'Max replies from service',
+			},
+			{
+				displayName: 'Only Content',
+				name: 'onlyContent',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to return only the content property',
+			},
+			{
+				displayName: 'Request Many',
+				name: 'requestMany',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to request multiple replies from services',
+			},
+			{
+				displayName: 'Timeout',
+				name: 'timeout',
+				type: 'number',
+				default: false,
+				description: 'Maximum timeout between incoming replies',
+			},
+		]
+	},
 ];

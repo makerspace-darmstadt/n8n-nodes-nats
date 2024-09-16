@@ -1,7 +1,6 @@
 import {
 	IDataObject,
 	IExecuteResponsePromiseData,
-	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 	IRun,
@@ -12,6 +11,7 @@ import {
 
 import Container from 'typedi';
 import { NatsService } from '../Nats.service';
+import { createNatsNodeMessage, NatsNodeMessageOptions } from '../Nats/actions/NATS';
 
 export class JetStreamTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -76,56 +76,45 @@ export class JetStreamTrigger implements INodeType {
 						description: 'Whether to save the content as binary',
 					},
 					{
+						displayName: 'JSON Parse Body',
+						name: 'jsonParseBody',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to parse the body to an object',
+					},
+					{
 						displayName: 'Message Acknowledge When',
 						name: 'acknowledge',
 						type: 'options',
 						options: [
-							{
-								name: 'Execution Finishes',
-								value: 'executionFinishes',
-								description:
-									'After the workflow execution finished. No matter if the execution was successful or not.',
-							},
-							{
-								name: 'Execution Finishes Successfully',
-								value: 'executionFinishesSuccessfully',
-								description: 'After the workflow execution finished successfully',
-							},
-							{
-								name: 'Immediately',
-								value: 'immediately',
-								description: 'As soon as the message got received',
-							},
-							{
-								name: 'Specified Later in Workflow',
-								value: 'laterMessageNode',
-								description: 'Using a NATS - JetStream node to remove the item from the queue',
-							},
+									{
+										name: 'Execution Finishes',
+										value: 'executionFinishes',
+										description: 'After the workflow execution finished. No matter if the execution was successful or not.',
+									},
+									{
+										name: 'Execution Finishes Successfully',
+										value: 'executionFinishesSuccessfully',
+										description: 'After the workflow execution finished successfully',
+									},
+									{
+										name: 'Immediately',
+										value: 'immediately',
+										description: 'As soon as the message got received',
+									},
+									{
+										name: 'Specified Later in Workflow',
+										value: 'laterMessageNode',
+										description: 'Using a NATS - JetStream node to remove the item from the queue',
+									},
 						],
 						default: 'immediately',
 						description: 'When to acknowledge the message',
 					},
 					{
-						displayName: 'JSON Parse Body',
-						name: 'jsonParseBody',
-						type: 'boolean',
-						displayOptions: {
-							hide: {
-								contentIsBinary: [true],
-							},
-						},
-						default: false,
-						description: 'Whether to parse the body to an object',
-					},
-					{
 						displayName: 'Only Content',
 						name: 'onlyContent',
 						type: 'boolean',
-						displayOptions: {
-							hide: {
-								contentIsBinary: [true],
-							},
-						},
 						default: false,
 						description: 'Whether to return only the content property',
 					},
@@ -156,7 +145,7 @@ export class JetStreamTrigger implements INodeType {
 	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
 		const stream = this.getNodeParameter('stream') as string;
 		const consumer = this.getNodeParameter('consumer') as string;
-		const options = this.getNodeParameter('options', {}) as IDataObject;
+		const options = this.getNodeParameter('options', {}) as IDataObject & NatsNodeMessageOptions;
 
 		let parallelMessages =
 			options.parallelMessages !== undefined && options.parallelMessages !== -1
@@ -188,43 +177,8 @@ export class JetStreamTrigger implements INodeType {
 					await message.ackAck()
 				}
 				try {
-					const item: INodeExecutionData = {
-						json: {},
-					};
 
-					if (options.contentIsBinary === true) {
-						item.binary = {
-							data: await this.helpers.prepareBinaryData(Buffer.from(message.data)),
-						};
-					} else {
-						const data = options.jsonParseBody === true
-								? message.json<IDataObject>()
-								: message.string();
-
-						item.json = { data: data };
-					}
-
-					if (options.onlyContent === true) {
-						//maybe normalize data
-						//item.json = item.json.data
-					} else {
-						//todo option for delivery info
-
-						//copy header values
-						const headers:IDataObject = {}
-						if(message.headers) {
-							for(var entry of message.headers) {
-								const values = entry[1]
-								headers[entry[0]] = values.length == 1 ? values[0] : values
-							}
-						}
-
-						item.json = {
-							...item.json,
-							subject: message.subject,
-							headers: headers
-						};
-					}
+					const item = await createNatsNodeMessage(this.helpers, message, undefined, options)
 
 					if (acknowledgeMode === 'executionFinishes' || acknowledgeMode === 'executionFinishesSuccessfully') {
 						const responsePromise = await this.helpers.createDeferredPromise<IRun>();
