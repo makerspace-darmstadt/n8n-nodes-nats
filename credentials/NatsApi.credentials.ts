@@ -30,97 +30,197 @@ export class NatsApi implements ICredentialType {
 			description: 'Set the hostport(s) where the client should attempt to connect.'
 		},
 		{
+			displayName: 'CA Cert',
+			name: 'tlsCa',
+			type: 'string',
+			default: undefined,
+			placeholder: 'PEM ca',
+			description: 'TLS Certificate Authority',
+      typeOptions: {
+				alwaysOpenEditWindow: true
+			}
+		},
+
+		// Server authentification
+		{
+      displayName: 'Authentication Type',
+			name: 'authType',
+			type: 'options',
+			default: undefined,
+			noDataExpression: true,
+			required: true,
+			description: 'https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro',
+			options: [
+				{
+					name: 'None',
+					value: 'none',
+					description: 'No Authentication'
+				},
+				{
+					name: 'Plain Text Username/Password credentials',
+					value: 'user',
+					description: 'authentication with username and password'
+				},
+				{
+					name: 'Token Authentication',
+					value: 'token',
+					description: 'authentication with a token'
+				},
+				{
+					name: 'TLS Certificate',
+					value: 'tls',
+					description: 'authentication with a tls certificate'
+				},
+				{
+					name: 'NKEY with Challenge',
+					value: 'nkey',
+					description: 'authentication with a nkey challenge'
+				},
+				{
+					name: 'Decentralized JWT Authentication',
+					value: 'jwt',
+					description: 'authentication with a jwt and nkey'
+				},
+				{
+					name: 'Creds file',
+					value: 'creds',
+					description: 'authentication with a creds file'
+				}
+			]
+		},
+		{
 			displayName: 'TLS Certificate',
 			name: 'tlsCert',
 			type: 'string',
 			default: undefined,
 			placeholder: 'PEM Cert',
-			description: 'TLS Certificate'
+			description: 'TLS Certificate',
+			typeOptions: {
+				alwaysOpenEditWindow: true
+			},
+			displayOptions: {
+				show: {
+					authType: ['tls']
+				}
+			}
 		},
 		{
 			displayName: 'TLS Key',
 			name: 'tlsKey',
 			type: 'string',
-			typeOptions: { password: true },
+			typeOptions: {
+				alwaysOpenEditWindow: true,
+				password: true
+			},
 			default: undefined,
 			placeholder: 'PEM key',
-			description: 'TLS Key'
+			description: 'TLS Key',
+			displayOptions: {
+				show: {
+					authType: ['tls']
+				}
+			}
 		},
 		{
-			displayName: 'TLS CA Cert',
-			name: 'tlsCa',
-			type: 'string',
-			default: undefined,
-			placeholder: 'PEM ca',
-			description: 'TLS Certificate Authority'
-		},
-
-		// Server authentification
-		{
-			displayName: '[Authentification User/Pass] User',
+			displayName: 'Username',
 			name: 'user',
 			type: 'string',
 			default: DefaultOptions.user,
 			placeholder: 'user',
-			description: 'Sets the username for a client connection.'
+			description: 'Sets the username for a client connection.',
+			displayOptions: {
+				show: {
+					authType: ['userPass']
+				}
+			}
 		},
 		{
-			displayName: '[Authentification User/Pass] Pass',
+			displayName: 'Password',
 			name: 'pass',
 			type: 'string',
 			typeOptions: { password: true },
 			default: DefaultOptions.pass,
 			placeholder: 'pass',
-			description: 'Sets the username for a client connection.'
+			description: 'Sets the username for a client connection.',
+			displayOptions: {
+				show: {
+					authType: ['userPass']
+				}
+			}
 		},
-
 		{
-			displayName: '[Authentification Token] Token',
+			displayName: 'Token',
 			name: 'token',
 			type: 'string',
 			typeOptions: { password: true },
 			default: DefaultOptions.token,
 			placeholder: 'token',
-			description: 'Set to a client authentication token. Note that these tokens are a specific authentication strategy on the nats-server.'
+			description: 'Set to a client authentication token. Note that these tokens are a specific authentication strategy on the nats-server.',
+			displayOptions: {
+				show: {
+					authType: ['token']
+				}
+			}
 		},
-
 		{
-			displayName: '[Authentification NKey] Seed',
+			displayName: 'NKey',
 			name: 'seed',
 			type: 'string',
 			typeOptions: { password: true },
 			default: undefined,
-			placeholder: '[Authentification] NKey seed',
-			description: '[Authentification] NKey seed'
+			placeholder: 'NKEY',
+			description: 'NKey seed',
+			displayOptions: {
+				show: {
+					authType: ['nkey']
+				}
+			}
 		},
-
 		{
-			displayName: '[Authentification JWT] Seed',
+			displayName: 'NKey',
 			name: 'jwtSeed',
 			type: 'string',
 			typeOptions: { password: true },
 			default: undefined,
-			placeholder: '[Authentification] JWT seed',
-			description: '[Authentification] JWT seed'
+			placeholder: 'NKEY',
+			description: 'NKey seed',
+			displayOptions: {
+				show: {
+					authType: ['jwt']
+				}
+			}
 		},
 		{
-			displayName: '[Authentification JWT] Token',
+			displayName: 'JWT',
 			name: 'jwt',
 			type: 'string',
 			typeOptions: { password: true },
 			default: undefined,
-			placeholder: '[Authentification] JWT token',
-			description: '[Authentification] JWT token'
+			placeholder: 'JWT',
+			description: 'JWT token',
+			displayOptions: {
+				show: {
+					authType: ['jwt']
+				}
+			}
 		},
 
 		{
-			displayName: '[Authentification Creds] Creds',
+			displayName: 'Creds',
 			name: 'creds',
 			type: 'string',
-			typeOptions: { password: true },
+			typeOptions: {
+				alwaysOpenEditWindow: true,
+				password: true
+			},
 			default: undefined,
-			placeholder: '[Authentification] Creds creds',
-			description: '[Authentification] Creds creds'
+			placeholder: 'Creds content',
+			description: 'Content of the creds file',
+			displayOptions: {
+				show: {
+					authType: ['creds']
+				}
+			}
 		},
 		{
 			displayName: 'Ignore auth error abort',
@@ -235,14 +335,6 @@ export class NatsApi implements ICredentialType {
 			placeholder: 'noEcho',
 		},
 		{
-			displayName: 'No echo',
-			name: 'noEcho',
-			type: 'boolean',
-			default: DefaultOptions.noEcho,
-			placeholder: 'noEcho',
-			description: 'When set to true, messages published by this client will not match this client\'s subscriptions, so the client is guaranteed to never receive self-published messages on a subject that it is listening on.'
-		},
-		{
 			displayName: 'No randomize',
 			name: 'noRandomize',
 			type: 'boolean',
@@ -271,7 +363,7 @@ export class NatsApi implements ICredentialType {
 			name: 'inboxPrefix',
 			type: 'string',
 			default: DefaultOptions.inboxPrefix,
-			placeholder: 'inboxPrefix',
+			placeholder: '_INBOX',
 			description: 'A string prefix (must be a valid subject prefix) prepended to inboxes generated by client. This allows a client with limited subject permissions to specify a subject where requests can deliver responses.'
 		},
 		{
