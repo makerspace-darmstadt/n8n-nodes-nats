@@ -3,7 +3,7 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	deepCopy,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import {
@@ -51,7 +51,6 @@ export class Nats implements INodeType {
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		let items = this.getInputData();
-		items = deepCopy(items);
 
 		const operation = this.getNodeParameter('operation', 0);
 
@@ -59,19 +58,21 @@ export class Nats implements INodeType {
 
 		const returnData: INodeExecutionData[] = [];
 
-		for (let i = 0; i < items.length; ++i) {
+		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				await (Actions.nats as any)[operation](this, nats.connection, i, returnData)
+				await (Actions.nats as any)[operation](this, nats.connection, itemIndex, returnData)
 			} catch (error) {
 				if (this.continueOnFail()) {
-					const executionData = this.helpers.constructExecutionMetaData(
-						this.helpers.returnJsonArray({ error: error.message }),
-						{ itemData: { item: i } },
-					);
-					returnData.push(...executionData);
-					continue;
+					returnData.push({ pairedItem: itemIndex, json: { error: error.message } });
+				} else {
+					if (error.context) {
+						error.context.itemIndex = itemIndex
+						throw error;
+					}
+					throw new NodeOperationError(this.getNode(), error, {
+						itemIndex,
+					});
 				}
-				throw error;
 			}
 		}
 		return this.prepareOutputData(returnData);

@@ -1,5 +1,5 @@
-import { BinaryHelperFunctions, IDataObject, IExecuteFunctions, INodeExecutionData } from "n8n-workflow";
-import { MsgHdrs, NatsConnection, Payload, RequestManyOptions, RequestOptions, headers } from "nats";
+import { FunctionsBase, IDataObject, IExecuteFunctions, INodeExecutionData, ITriggerFunctions, NodeOperationError } from "n8n-workflow";
+import { MsgHdrs, NatsConnection, Payload, RequestManyOptions, RequestOptions, ServiceError, ServiceErrorCodeHeader, ServiceErrorHeader, headers } from "nats";
 
 export async function publish(func: IExecuteFunctions, connection: NatsConnection, idx: number, returnData: INodeExecutionData[]): Promise<any> {
 	const head = headers()
@@ -59,7 +59,7 @@ export async function request(func: IExecuteFunctions, connection: NatsConnectio
 		const responses = await connection.requestMany(subject, payload, reqOpts)
 
 		for await(const rsp of responses) {
-			const	item = await createNatsNodeMessage(func.helpers, rsp, idx, options)
+			const	item = await createNatsNodeMessage(func, rsp, idx, options)
 
 			returnData.push(item)
 		}
@@ -71,13 +71,14 @@ export async function request(func: IExecuteFunctions, connection: NatsConnectio
 
 		const rsp = await connection.request(subject, payload, reqOpts)
 
-		const	item = await createNatsNodeMessage(func.helpers, rsp, idx, options)
+		const	item = await createNatsNodeMessage(func, rsp, idx, options)
 
 		returnData.push(item)
 	}
 }
 
-export type NatsNodeHeaders = Record<string,string|string[]>
+
+export type NatsNodeHeaders = Record<string,string|string[]|undefined>
 
 export type NatsNodeData = IDataObject|string
 
@@ -110,7 +111,9 @@ export interface INatsMsgLike {
 	string(): string
 }
 
-export async function createNatsNodeMessage(helpers: BinaryHelperFunctions, msg:INatsMsgLike, idx?: number, options:NatsNodeMessageOptions = {}) {
+export type NodeMessageFunctions = Pick<FunctionsBase, "getNode"> & (Pick<IExecuteFunctions,"helpers">|Pick<ITriggerFunctions,"helpers">)
+
+export async function createNatsNodeMessage(func:NodeMessageFunctions, msg:INatsMsgLike, idx?: number, options:NatsNodeMessageOptions = {}) {
 
 	const item: INodeExecutionData = {
 		json: {},
@@ -126,7 +129,7 @@ export async function createNatsNodeMessage(helpers: BinaryHelperFunctions, msg:
 	if (options.contentIsBinary === true) {
 		//todo get output binary name
 		item.binary = {
-			data: await helpers.prepareBinaryData(Buffer.from(msg.data)),
+			data: await func.helpers.prepareBinaryData(Buffer.from(msg.data)),
 		}
 	} else if(jsonParse) {
 		const data = msg.data.length > 0
@@ -141,6 +144,32 @@ export async function createNatsNodeMessage(helpers: BinaryHelperFunctions, msg:
 		item.json.data = msg.string()
 	}
 
+	let serviceError:ServiceError|null = null
+
+	//copy header values
+	const headers:NatsNodeHeaders = {}
+	if(msg.headers) {
+		let errorCode:number = 0
+		let errorReason:string = ""
+
+		for(var[key,values] of msg.headers) {
+			switch(key) {
+				case ServiceErrorCodeHeader:
+					errorCode = Number.parseInt(values.at(-1) ?? '')
+					break
+				case ServiceErrorHeader:
+					errorReason = values.join('\n')
+					break
+				default:
+					headers[key] = values.length == 1 ? values.at(0) : values
+					break
+			}
+		}
+
+		if(errorCode !== 0)
+			serviceError = new ServiceError(errorCode, errorReason)
+	}
+
 	if (!options.onlyContent) {
 		//todo option for delivery info
 
@@ -148,16 +177,23 @@ export async function createNatsNodeMessage(helpers: BinaryHelperFunctions, msg:
 		if(msg.reply)
 			item.json.reply = msg.reply
 
-		//copy header values
-		const headers:NatsNodeHeaders = {}
-		if(msg.headers) {
-			for(var entry of msg.headers) {
-				const values = entry[1]
-				headers[entry[0]] = values.length == 1 ? values[0] : values
-			}
-		}
-
 		item.json.headers = headers
+	}
+
+	if(serviceError) {
+		const node = func.getNode()
+
+		const error = new NodeOperationError(node, serviceError,
+			{
+				itemIndex: idx,
+				message: `Error ${serviceError.code}`,
+				description: serviceError.message
+			})
+
+		if(!node.continueOnFail)
+			throw error
+
+		item.error = error
 	}
 
 	return item

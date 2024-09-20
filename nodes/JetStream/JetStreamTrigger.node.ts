@@ -178,7 +178,8 @@ export class JetStreamTrigger implements INodeType {
 				}
 				try {
 
-					const item = await createNatsNodeMessage(this.helpers, message, undefined, options)
+					this.helpers
+					const item = await createNatsNodeMessage(this, message, undefined, options)
 
 					if (acknowledgeMode === 'executionFinishes' || acknowledgeMode === 'executionFinishesSuccessfully') {
 						const responsePromise = await this.helpers.createDeferredPromise<IRun>();
