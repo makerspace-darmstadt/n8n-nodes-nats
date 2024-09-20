@@ -123,7 +123,8 @@ export async function createNatsNodeMessage(helpers: BinaryHelperFunctions, msg:
 			data: await helpers.prepareBinaryData(Buffer.from(msg.data)),
 		}
 	} else if(options.jsonParseBody) {
-		const data = msg.json<IDataObject>()
+		const data = msg.data.length > 0
+			? msg.json<IDataObject>() : {}
 
 		if(options.onlyContent)
 			item.json = data
