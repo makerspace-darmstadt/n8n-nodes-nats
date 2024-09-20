@@ -66,7 +66,7 @@ export async function request(func: IExecuteFunctions, connection: NatsConnectio
 	} else {
 		const reqOpts:RequestOptions = {
 			headers: head,
-			timeout: options.timeout ?? 300
+			timeout: options.timeout ?? 600
 		}
 
 		const rsp = await connection.request(subject, payload, reqOpts)
