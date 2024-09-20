@@ -117,12 +117,18 @@ export async function createNatsNodeMessage(helpers: BinaryHelperFunctions, msg:
 		pairedItem: idx
 	}
 
+	let jsonParse = options.jsonParseBody
+
+	if(jsonParse === undefined && msg.data.length >= 2) {
+		jsonParse = msg.data.at(0) === 123 && msg.data.at(-1) === 125
+	}
+
 	if (options.contentIsBinary === true) {
 		//todo get output binary name
 		item.binary = {
 			data: await helpers.prepareBinaryData(Buffer.from(msg.data)),
 		}
-	} else if(options.jsonParseBody) {
+	} else if(jsonParse) {
 		const data = msg.data.length > 0
 			? msg.json<IDataObject>() : {}
 
