@@ -30,6 +30,7 @@ export function natsConnectionOptions(credentials: ICredentialDataDecryptedObjec
 		options.tls = { ca: tlsCa }
 	}
 
+	switch (authType) {
 		case 'none':
 			 break
 		case 'user':
