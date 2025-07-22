@@ -2,9 +2,7 @@ import { ICredentialDataDecryptedObject, ICredentialTestFunctions, ICredentialsD
 import { Authenticator, ConnectionOptions, connect, credsAuthenticator, jwtAuthenticator, nkeyAuthenticator, tokenAuthenticator, usernamePasswordAuthenticator } from "nats";
 
 export function natsConnectionOptions(credentials: ICredentialDataDecryptedObject): ConnectionOptions {
-	let { authType, user, pass, token, seed, jwtSeed, jwt, creds, tlsCa, tlsCert, tlsKey, ...options } = credentials
-
-	options.tls = { ca: tlsCa }
+	let { authType, tlsEnabled, user, pass, token, seed, jwtSeed, jwt, creds, tlsCa, tlsCert, tlsKey, ...options } = credentials
 
 	const authenticators: Authenticator[] = []
 
@@ -27,7 +25,12 @@ export function natsConnectionOptions(credentials: ICredentialDataDecryptedObjec
 		}
 	}
 
-	switch(authType) {
+	// If TLS is enabled, ensure that the CA certificate is provided
+	if (tlsEnabled) {
+		options.tls = { ca: tlsCa }
+	}
+
+	switch (authType) {
 		case 'none':
 			 break
 		case 'user':
@@ -46,6 +49,7 @@ export function natsConnectionOptions(credentials: ICredentialDataDecryptedObjec
 			authenticators.push(credsAuthenticator(new TextEncoder().encode(creds as string)))
 		  break
 		case 'tls':
+			options.tls = { ca: tlsCa }
 			options.tls.cert = { ...options.tls, cert: tlsCert, key: tlsKey }
 		  break
 	}
