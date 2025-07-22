@@ -30,6 +30,14 @@ export class NatsApi implements ICredentialType {
 			description: 'Set the hostport(s) where the client should attempt to connect.'
 		},
 		{
+			displayName: 'Enable TLS',
+			name: 'tlsEnabled',
+			type: 'boolean',
+			default: false,
+			placeholder: 'Enable TLS',
+			description: 'When set to true, TLS will be enabled for the connection.'
+		},
+		{
 			displayName: 'CA Cert',
 			name: 'tlsCa',
 			type: 'string',
@@ -38,6 +46,11 @@ export class NatsApi implements ICredentialType {
 			description: 'TLS Certificate Authority',
       typeOptions: {
 				alwaysOpenEditWindow: true
+			},
+			displayOptions: {
+				show: {
+					tlsEnabled: [true]
+				}
 			}
 		},
 
