@@ -143,7 +143,7 @@ export class NatsApi implements ICredentialType {
 			description: 'Sets the username for a client connection.',
 			displayOptions: {
 				show: {
-					authType: ['userPass']
+					authType: ['user']
 				}
 			}
 		},
@@ -154,10 +154,10 @@ export class NatsApi implements ICredentialType {
 			typeOptions: { password: true },
 			default: DefaultOptions.pass,
 			placeholder: 'pass',
-			description: 'Sets the username for a client connection.',
+			description: 'Sets the password for a client connection.',
 			displayOptions: {
 				show: {
-					authType: ['userPass']
+					authType: ['user']
 				}
 			}
 		},
@@ -296,7 +296,7 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.reconnect,
 			placeholder: 'reconnect',
-			description: 'When set to true, the server will attempt to reconnect.'
+			description: 'When set to true, the client will attempt to reconnect when the connection is lost.'
 		},
 		{
 			displayName: 'Max reconnect attempts',
@@ -321,14 +321,6 @@ export class NatsApi implements ICredentialType {
 			default: DefaultOptions.reconnectTimeWait,
 			placeholder: 'reconnectTimeWait',
 			description: 'Set the number of millisecods between reconnect attempts.'
-		},
-		{
-			displayName: 'Reconnect jitter',
-			name: 'reconnectJitter',
-			type: 'number',
-			default: DefaultOptions.reconnectJitter,
-			placeholder: 'reconnectJitter',
-			description: 'Set the upper bound for a random delay in milliseconds added to reconnectTimeWait.'
 		},
 		{
 			displayName: 'Timeout',
