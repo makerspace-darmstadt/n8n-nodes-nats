@@ -143,7 +143,7 @@ export class NatsApi implements ICredentialType {
 			description: 'Sets the username for a client connection.',
 			displayOptions: {
 				show: {
-					authType: ['userPass']
+					authType: ['user']
 				}
 			}
 		},
@@ -154,10 +154,10 @@ export class NatsApi implements ICredentialType {
 			typeOptions: { password: true },
 			default: DefaultOptions.pass,
 			placeholder: 'pass',
-			description: 'Sets the username for a client connection.',
+			description: 'Sets the password for a client connection.',
 			displayOptions: {
 				show: {
-					authType: ['userPass']
+					authType: ['user']
 				}
 			}
 		},
@@ -296,7 +296,7 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.reconnect,
 			placeholder: 'reconnect',
-			description: 'When set to true, the server will attempt to reconnect.'
+			description: 'When set to true, the client will attempt to reconnect when the connection is lost.'
 		},
 		{
 			displayName: 'Max reconnect attempts',
