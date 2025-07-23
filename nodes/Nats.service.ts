@@ -23,6 +23,23 @@ export class NatsService {
 	constructor() {
 	}
 
+	// Debug method to check connection status
+	getConnectionStatus(connectionId: string) {
+		const entry = this.connections.get(connectionId)
+		if (!entry) {
+			return { exists: false }
+		}
+		
+		return {
+			exists: true,
+			id: entry.id,
+			refCount: entry.refCount,
+			isClosed: entry.connection.isClosed(),
+			isDraining: entry.connection.isDraining(),
+			hasTimer: !!entry.timer
+		}
+	}
+
 	async getConnection(func: IAllExecuteFunctions, credentials?: ICredentialDataDecryptedObject): Promise<NatsConnectionHandle> {
 
 		//todo acquire n8n credentials id
@@ -34,11 +51,23 @@ export class NatsService {
 		let entry = this.connections.get(cid)
 
 		if(entry && entry.connection.isClosed()) {
-			entry = undefined //reconnect
+			// Remove the closed connection from cache and create a new one
+			this.connections.delete(cid)
+			entry = undefined
 		}
 
 		if (!entry) {
 			const connection = await connect(options)
+			
+			// Add connection event listeners for better reconnection handling
+			connection.closed().then(() => {
+				// Connection has been permanently closed, remove from cache
+				this.connections.delete(cid)
+			}).catch(() => {
+				// Error in connection, remove from cache
+				this.connections.delete(cid)
+			})
+			
 			entry = {
 				id: `${cid}-${this.counter++}`, //entry Id
 				connection: connection,
@@ -93,7 +122,7 @@ export class NatsService {
 
 	private releaseConnection(entryId: string) {
 		const i = entryId.lastIndexOf('-');
-		const cid = entryId.substring(i+1)
+		const cid = entryId.substring(0, i)
 
 		const entry = this.connections.get(cid)
 		if(!entry || entry.id != entryId) {
