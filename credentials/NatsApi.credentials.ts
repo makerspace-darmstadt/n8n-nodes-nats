@@ -323,14 +323,6 @@ export class NatsApi implements ICredentialType {
 			description: 'Set the number of millisecods between reconnect attempts.'
 		},
 		{
-			displayName: 'Reconnect jitter',
-			name: 'reconnectJitter',
-			type: 'number',
-			default: DefaultOptions.reconnectJitter,
-			placeholder: 'reconnectJitter',
-			description: 'Set the upper bound for a random delay in milliseconds added to reconnectTimeWait.'
-		},
-		{
 			displayName: 'Timeout',
 			name: 'timeout',
 			type: 'number',
