@@ -3,13 +3,11 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionType,
 	deepCopy,
 } from 'n8n-workflow';
 
-import {
-	jetstreamDescription, jetstreamOperations
-} from './descriptions';
-
+import { jetstreamDescription, jetstreamOperations } from './descriptions';
 
 import { natsCredTest } from '../common';
 
@@ -29,8 +27,8 @@ export class JetStream implements INodeType {
 		defaults: {
 			name: 'JetStream',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
 		credentials: [
 			{
 				name: 'natsApi',
@@ -38,15 +36,13 @@ export class JetStream implements INodeType {
 				testedBy: 'natsCredTest',
 			},
 		],
-		properties: [
-			...jetstreamDescription, ...jetstreamOperations,
-		]
+		properties: [...jetstreamDescription, ...jetstreamOperations],
 	};
 
 	methods = {
 		credentialTest: {
-			natsCredTest
-		}
+			natsCredTest,
+		},
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -59,13 +55,13 @@ export class JetStream implements INodeType {
 			return [items];
 		}
 
-		using nats  = await Container.get(NatsService).getJetStream(this)
+		using nats = await Container.get(NatsService).getJetStream(this);
 
 		const returnData: INodeExecutionData[] = [];
 
 		for (let i = 0; i < items.length; ++i) {
 			try {
-				await (Actions.jetstream as any)[operation](this, nats.js, i, returnData)
+				await (Actions.jetstream as any)[operation](this, nats.js, i, returnData);
 			} catch (error) {
 				if (this.continueOnFail()) {
 					const executionData = this.helpers.constructExecutionMetaData(
@@ -80,5 +76,5 @@ export class JetStream implements INodeType {
 		}
 
 		return this.prepareOutputData(returnData);
-	};
+	}
 }

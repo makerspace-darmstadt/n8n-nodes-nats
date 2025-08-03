@@ -6,6 +6,7 @@ import {
 	IRun,
 	ITriggerFunctions,
 	ITriggerResponse,
+	NodeConnectionType,
 	NodeOperationError,
 } from 'n8n-workflow';
 
@@ -37,7 +38,7 @@ export class JetStreamTrigger implements INodeType {
 				"Once you’ve finished building your workflow, <a data-key='activate'>activate</a> it to have it also listen continuously (you just won’t see those executions here).",
 		},
 		inputs: [],
-		outputs: ['main'],
+		outputs: [NodeConnectionType.Main],
 		credentials: [
 			{
 				name: 'natsApi',
@@ -87,26 +88,27 @@ export class JetStreamTrigger implements INodeType {
 						name: 'acknowledge',
 						type: 'options',
 						options: [
-									{
-										name: 'Execution Finishes',
-										value: 'executionFinishes',
-										description: 'After the workflow execution finished. No matter if the execution was successful or not.',
-									},
-									{
-										name: 'Execution Finishes Successfully',
-										value: 'executionFinishesSuccessfully',
-										description: 'After the workflow execution finished successfully',
-									},
-									{
-										name: 'Immediately',
-										value: 'immediately',
-										description: 'As soon as the message got received',
-									},
-									{
-										name: 'Specified Later in Workflow',
-										value: 'laterMessageNode',
-										description: 'Using a NATS - JetStream node to remove the item from the queue',
-									},
+							{
+								name: 'Execution Finishes',
+								value: 'executionFinishes',
+								description:
+									'After the workflow execution finished. No matter if the execution was successful or not.',
+							},
+							{
+								name: 'Execution Finishes Successfully',
+								value: 'executionFinishesSuccessfully',
+								description: 'After the workflow execution finished successfully',
+							},
+							{
+								name: 'Immediately',
+								value: 'immediately',
+								description: 'As soon as the message got received',
+							},
+							{
+								name: 'Specified Later in Workflow',
+								value: 'laterMessageNode',
+								description: 'Using a NATS - JetStream node to remove the item from the queue',
+							},
 						],
 						default: 'immediately',
 						description: 'When to acknowledge the message',
@@ -125,7 +127,7 @@ export class JetStreamTrigger implements INodeType {
 						default: -1,
 						description: 'Max number of executions at a time. Use -1 for no limit.',
 					},
-				]
+				],
 			},
 			{
 				displayName:
@@ -139,7 +141,7 @@ export class JetStreamTrigger implements INodeType {
 				},
 				default: '',
 			},
-		]
+		],
 	};
 
 	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
@@ -165,53 +167,63 @@ export class JetStreamTrigger implements INodeType {
 
 		let acknowledgeMode = options.acknowledge ? options.acknowledge : 'immediately';
 
-		const nats = await Container.get(NatsService).getJetStream(this)
+		const nats = await Container.get(NatsService).getJetStream(this);
 
 		const jsConsumer = await nats.js.consumers.get(stream, consumer);
 		const messages = await jsConsumer.consume({ max_messages: parallelMessages });
 
 		const consume = async () => {
 			for await (const message of messages) {
-				message.working()
+				message.working();
 				if (acknowledgeMode === 'immediately') {
-					await message.ackAck()
+					await message.ackAck();
 				}
 				try {
+					this.helpers;
+					const item = await createNatsNodeMessage(this, message, undefined, options);
 
-					this.helpers
-					const item = await createNatsNodeMessage(this, message, undefined, options)
-
-					if (acknowledgeMode === 'executionFinishes' || acknowledgeMode === 'executionFinishesSuccessfully') {
+					if (
+						acknowledgeMode === 'executionFinishes' ||
+						acknowledgeMode === 'executionFinishesSuccessfully'
+					) {
 						const responsePromise = await this.helpers.createDeferredPromise<IRun>();
 						this.emit([this.helpers.returnJsonArray([item])], undefined, responsePromise);
-						const data = await responsePromise.promise();
-						if ((!data.data.resultData.error && acknowledgeMode === 'executionFinishesSuccessfully') || acknowledgeMode === 'executionFinishes') {
+						const data = await responsePromise.promise;
+						if (
+							(!data.data.resultData.error &&
+								acknowledgeMode === 'executionFinishesSuccessfully') ||
+							acknowledgeMode === 'executionFinishes'
+						) {
 							await message.ackAck();
-						} else if (data.data.resultData.error && acknowledgeMode === 'executionFinishesSuccessfully') {
+						} else if (
+							data.data.resultData.error &&
+							acknowledgeMode === 'executionFinishesSuccessfully'
+						) {
 							message.nak();
 							this.emitError(data.data.resultData.error);
 						}
 					} else if (acknowledgeMode === 'laterMessageNode') {
-						const responsePromiseHook = await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
+						const responsePromiseHook =
+							await this.helpers.createDeferredPromise<IExecuteResponsePromiseData>();
 						this.emit([this.helpers.returnJsonArray([item])], responsePromiseHook);
-						await responsePromiseHook.promise();
+						await responsePromiseHook.promise;
 						await message.ackAck();
 					} else {
 						this.emit([this.helpers.returnJsonArray([item])]);
 					}
 				} catch (error) {
 					if (acknowledgeMode !== 'immediately') {
-						message.nak()
+						message.nak();
 					}
-					this.emitError(error)
+					this.emitError(error);
 				}
 			}
-		}
+		};
 		consume();
 
 		const closeFunction = async () => {
 			await messages.close(); //todo error handling
-			nats[Symbol.dispose]()
+			nats[Symbol.dispose]();
 		};
 
 		return {

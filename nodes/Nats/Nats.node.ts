@@ -3,13 +3,11 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionType,
 	NodeOperationError,
 } from 'n8n-workflow';
 
-import {
-	natsDescription, natsOperations
-} from './descriptions';
-
+import { natsDescription, natsOperations } from './descriptions';
 
 import { natsCredTest } from '../common';
 
@@ -29,8 +27,8 @@ export class Nats implements INodeType {
 		defaults: {
 			name: 'NATS',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
 		credentials: [
 			{
 				name: 'natsApi',
@@ -38,15 +36,13 @@ export class Nats implements INodeType {
 				testedBy: 'natsCredTest',
 			},
 		],
-		properties: [
-			...natsOperations, ...natsDescription,
-		]
+		properties: [...natsOperations, ...natsDescription],
 	};
 
 	methods = {
 		credentialTest: {
-			natsCredTest
-		}
+			natsCredTest,
+		},
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -54,19 +50,19 @@ export class Nats implements INodeType {
 
 		const operation = this.getNodeParameter('operation', 0);
 
-		using nats = await Container.get(NatsService).getConnection(this)
+		using nats = await Container.get(NatsService).getConnection(this);
 
 		const returnData: INodeExecutionData[] = [];
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				await (Actions.nats as any)[operation](this, nats.connection, itemIndex, returnData)
+				await (Actions.nats as any)[operation](this, nats.connection, itemIndex, returnData);
 			} catch (error) {
 				if (this.continueOnFail()) {
 					returnData.push({ pairedItem: itemIndex, json: { error: error.message } });
 				} else {
 					if (error.context) {
-						error.context.itemIndex = itemIndex
+						error.context.itemIndex = itemIndex;
 						throw error;
 					}
 					throw new NodeOperationError(this.getNode(), error, {
@@ -76,5 +72,5 @@ export class Nats implements INodeType {
 			}
 		}
 		return this.prepareOutputData(returnData);
-	};
+	}
 }

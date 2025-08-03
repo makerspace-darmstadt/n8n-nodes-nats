@@ -2,8 +2,8 @@ import type { ICredentialType, INodeProperties } from 'n8n-workflow';
 import { defaultJsOptions } from 'nats/lib/jetstream/jsbaseclient_api';
 import { defaultOptions } from 'nats/lib/nats-base-client/options';
 
-const DefaultOptions = defaultOptions()
-const DefaultJsOptions = defaultJsOptions()
+const DefaultOptions = defaultOptions();
+const DefaultJsOptions = defaultJsOptions();
 
 export class NatsApi implements ICredentialType {
 	name = 'natsApi';
@@ -17,7 +17,8 @@ export class NatsApi implements ICredentialType {
 			type: 'string',
 			default: DefaultOptions.name,
 			placeholder: 'Client Name',
-			description: 'Sets the client name. When set, the server monitoring pages will display this name when referring to this client.'
+			description:
+				'Sets the client name. When set, the server monitoring pages will display this name when referring to this client.',
 		},
 
 		// Server connection
@@ -27,7 +28,7 @@ export class NatsApi implements ICredentialType {
 			type: 'string',
 			default: DefaultOptions.servers,
 			placeholder: 'nats://nats1:4222,nats://nats2:4222,nats://nats3:4222',
-			description: 'Set the hostport(s) where the client should attempt to connect.'
+			description: 'Set the hostport(s) where the client should attempt to connect.',
 		},
 		{
 			displayName: 'Enable TLS',
@@ -35,7 +36,7 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: false,
 			placeholder: 'Enable TLS',
-			description: 'When set to true, TLS will be enabled for the connection.'
+			description: 'When set to true, TLS will be enabled for the connection.',
 		},
 		{
 			displayName: 'CA Cert',
@@ -44,63 +45,64 @@ export class NatsApi implements ICredentialType {
 			default: undefined,
 			placeholder: 'PEM ca',
 			description: 'TLS Certificate Authority',
-      		typeOptions: {
+			typeOptions: {
 				rows: 4,
-				alwaysOpenEditWindow: true
+				alwaysOpenEditWindow: true,
 			},
 			displayOptions: {
 				show: {
-					tlsEnabled: [true]
-				}
-			}
+					tlsEnabled: [true],
+				},
+			},
 		},
 
 		// Server authentification
 		{
-      displayName: 'Authentication Type',
+			displayName: 'Authentication Type',
 			name: 'authType',
 			type: 'options',
 			default: undefined,
 			noDataExpression: true,
 			required: true,
-			description: 'https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro',
+			description:
+				'https://docs.nats.io/running-a-nats-service/configuration/securing_nats/auth_intro',
 			options: [
 				{
 					name: 'None',
 					value: 'none',
-					description: 'No Authentication'
+					description: 'No Authentication',
 				},
 				{
 					name: 'Plain Text Username/Password credentials',
 					value: 'user',
-					description: 'authentication with username and password'
+					description: 'authentication with username and password',
 				},
 				{
 					name: 'Token Authentication',
 					value: 'token',
-					description: 'authentication with a token'
+					description: 'authentication with a token',
 				},
 				{
 					name: 'TLS Certificate',
 					value: 'tls',
-					description: 'authentication with a tls certificate'
+					description: 'authentication with a tls certificate',
 				},
 				{
 					name: 'NKEY with Challenge',
 					value: 'nkey',
-					description: 'authentication with a nkey challenge'
+					description: 'authentication with a nkey challenge',
 				},
 				{
 					name: 'Decentralized JWT Authentication',
 					value: 'jwt',
-					description: 'authentication with a jwt and nkey'
+					description: 'authentication with a jwt and nkey',
 				},
 				{
 					name: 'Creds file',
 					value: 'creds',
-					description: 'authentication with a creds file'
-				}
-			]
+					description: 'authentication with a creds file',
+				},
+			],
 		},
 		{
 			displayName: 'TLS Certificate',
@@ -115,9 +117,9 @@ export class NatsApi implements ICredentialType {
 			},
 			displayOptions: {
 				show: {
-					authType: ['tls']
-				}
-			}
+					authType: ['tls'],
+				},
+			},
 		},
 		{
 			displayName: 'TLS Key',
@@ -132,9 +134,9 @@ export class NatsApi implements ICredentialType {
 			description: 'TLS Key',
 			displayOptions: {
 				show: {
-					authType: ['tls']
-				}
-			}
+					authType: ['tls'],
+				},
+			},
 		},
 		{
 			displayName: 'Username',
@@ -145,9 +147,9 @@ export class NatsApi implements ICredentialType {
 			description: 'Sets the username for a client connection.',
 			displayOptions: {
 				show: {
-					authType: ['user']
-				}
-			}
+					authType: ['user'],
+				},
+			},
 		},
 		{
 			displayName: 'Password',
@@ -159,9 +161,9 @@ export class NatsApi implements ICredentialType {
 			description: 'Sets the password for a client connection.',
 			displayOptions: {
 				show: {
-					authType: ['user']
-				}
-			}
+					authType: ['user'],
+				},
+			},
 		},
 		{
 			displayName: 'Token',
@@ -170,12 +172,13 @@ export class NatsApi implements ICredentialType {
 			typeOptions: { password: true },
 			default: DefaultOptions.token,
 			placeholder: 'token',
-			description: 'Set to a client authentication token. Note that these tokens are a specific authentication strategy on the nats-server.',
+			description:
+				'Set to a client authentication token. Note that these tokens are a specific authentication strategy on the nats-server.',
 			displayOptions: {
 				show: {
-					authType: ['token']
-				}
-			}
+					authType: ['token'],
+				},
+			},
 		},
 		{
 			displayName: 'NKey',
@@ -187,9 +190,9 @@ export class NatsApi implements ICredentialType {
 			description: 'NKey seed',
 			displayOptions: {
 				show: {
-					authType: ['nkey']
-				}
-			}
+					authType: ['nkey'],
+				},
+			},
 		},
 		{
 			displayName: 'NKey',
@@ -201,9 +204,9 @@ export class NatsApi implements ICredentialType {
 			description: 'NKey seed',
 			displayOptions: {
 				show: {
-					authType: ['jwt']
-				}
-			}
+					authType: ['jwt'],
+				},
+			},
 		},
 		{
 			displayName: 'JWT',
@@ -215,9 +218,9 @@ export class NatsApi implements ICredentialType {
 			description: 'JWT token',
 			displayOptions: {
 				show: {
-					authType: ['jwt']
-				}
-			}
+					authType: ['jwt'],
+				},
+			},
 		},
 
 		{
@@ -226,16 +229,16 @@ export class NatsApi implements ICredentialType {
 			type: 'string',
 			typeOptions: {
 				alwaysOpenEditWindow: true,
-				password: true
+				password: true,
 			},
 			default: undefined,
 			placeholder: 'Creds content',
 			description: 'Content of the creds file',
 			displayOptions: {
 				show: {
-					authType: ['creds']
-				}
-			}
+					authType: ['creds'],
+				},
+			},
 		},
 		{
 			displayName: 'Ignore auth error abort',
@@ -243,7 +246,8 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.ignoreAuthErrorAbort,
 			placeholder: 'ignoreAuthErrorAbort',
-			description: 'By default, NATS clients will abort reconnect if they fail authentication twice in a row with the same error, regardless of the reconnect policy. This option should be used with care as it will disable this behaviour when true.'
+			description:
+				'By default, NATS clients will abort reconnect if they fail authentication twice in a row with the same error, regardless of the reconnect policy. This option should be used with care as it will disable this behaviour when true.',
 		},
 
 		// JetStream specific
@@ -253,7 +257,7 @@ export class NatsApi implements ICredentialType {
 			type: 'string',
 			default: DefaultJsOptions.apiPrefix,
 			placeholder: 'apiPrefix',
-			description: 'Prefix required to interact with JetStream. Must match server configuration.'
+			description: 'Prefix required to interact with JetStream. Must match server configuration.',
 		},
 		{
 			displayName: '[JetStream] Timeout',
@@ -261,7 +265,7 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultJsOptions.timeout,
 			placeholder: 'timeout',
-			description: 'Number of milliseconds to wait for a JetStream API request.'
+			description: 'Number of milliseconds to wait for a JetStream API request.',
 		},
 		{
 			displayName: '[JetStream] Domain',
@@ -269,9 +273,9 @@ export class NatsApi implements ICredentialType {
 			type: 'string',
 			default: DefaultJsOptions.domain,
 			placeholder: 'domain',
-			description: 'Name of the JetStream domain. This value automatically modifies the default JetStream apiPrefix.'
+			description:
+				'Name of the JetStream domain. This value automatically modifies the default JetStream apiPrefix.',
 		},
-
 
 		// Ping
 		{
@@ -280,7 +284,8 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultOptions.maxPingOut,
 			placeholder: 'maxPingOut',
-			description: 'Sets the maximum count of ping commands that can be awaiting a response before rasing a stale connection status notification and initiating a reconnect.'
+			description:
+				'Sets the maximum count of ping commands that can be awaiting a response before rasing a stale connection status notification and initiating a reconnect.',
 		},
 		{
 			displayName: 'Ping interval',
@@ -288,7 +293,7 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultOptions.pingInterval,
 			placeholder: 'pingInterval',
-			description: 'Sets the number of milliseconds between client initiated ping commands.'
+			description: 'Sets the number of milliseconds between client initiated ping commands.',
 		},
 
 		// Reconnection
@@ -298,7 +303,8 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.reconnect,
 			placeholder: 'reconnect',
-			description: 'When set to true, the client will attempt to reconnect when the connection is lost.'
+			description:
+				'When set to true, the client will attempt to reconnect when the connection is lost.',
 		},
 		{
 			displayName: 'Max reconnect attempts',
@@ -306,7 +312,8 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultOptions.maxReconnectAttempts,
 			placeholder: 'maxReconnectAttempts',
-			description: 'Sets the maximum count of per-server reconnect attempts before giving up. Set to `-1` to never give up.'
+			description:
+				'Sets the maximum count of per-server reconnect attempts before giving up. Set to `-1` to never give up.',
 		},
 		{
 			displayName: 'Reconnect jitter',
@@ -314,7 +321,8 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultOptions.reconnectJitter,
 			placeholder: 'reconnectJitter',
-			description: 'Set the upper bound for a random delay in milliseconds added to reconnectTimeWait.'
+			description:
+				'Set the upper bound for a random delay in milliseconds added to reconnectTimeWait.',
 		},
 		{
 			displayName: 'Reconnect time wait',
@@ -322,7 +330,7 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultOptions.reconnectTimeWait,
 			placeholder: 'reconnectTimeWait',
-			description: 'Set the number of millisecods between reconnect attempts.'
+			description: 'Set the number of millisecods between reconnect attempts.',
 		},
 		{
 			displayName: 'Timeout',
@@ -330,7 +338,8 @@ export class NatsApi implements ICredentialType {
 			type: 'number',
 			default: DefaultOptions.timeout,
 			placeholder: 'timeout',
-			description: 'Sets the number of milliseconds the client should wait for a server handshake to be established.'
+			description:
+				'Sets the number of milliseconds the client should wait for a server handshake to be established.',
 		},
 
 		// Misc options
@@ -347,7 +356,7 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.noRandomize,
 			placeholder: 'noRandomize',
-			description: 'If set to true, the client will not randomize its server connection list.'
+			description: 'If set to true, the client will not randomize its server connection list.',
 		},
 		{
 			displayName: 'Wait on first connect',
@@ -355,7 +364,8 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.waitOnFirstConnect,
 			placeholder: 'waitOnFirstConnect',
-			description: 'When set to true, maxReconnectAttempts will not trigger until the client has established one connection.'
+			description:
+				'When set to true, maxReconnectAttempts will not trigger until the client has established one connection.',
 		},
 		{
 			displayName: 'Ignore cluster updates',
@@ -363,7 +373,8 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.ignoreClusterUpdates,
 			placeholder: 'ignoreClusterUpdates',
-			description: 'When set to true, cluster information gossiped by the nats-server will not augment the lists of server(s) known by the client.'
+			description:
+				'When set to true, cluster information gossiped by the nats-server will not augment the lists of server(s) known by the client.',
 		},
 		{
 			displayName: 'Inbox prefix',
@@ -371,7 +382,8 @@ export class NatsApi implements ICredentialType {
 			type: 'string',
 			default: DefaultOptions.inboxPrefix,
 			placeholder: '_INBOX',
-			description: 'A string prefix (must be a valid subject prefix) prepended to inboxes generated by client. This allows a client with limited subject permissions to specify a subject where requests can deliver responses.'
+			description:
+				'A string prefix (must be a valid subject prefix) prepended to inboxes generated by client. This allows a client with limited subject permissions to specify a subject where requests can deliver responses.',
 		},
 		{
 			displayName: 'Debug',
@@ -379,7 +391,8 @@ export class NatsApi implements ICredentialType {
 			type: 'boolean',
 			default: DefaultOptions.debug,
 			placeholder: 'debug',
-			description: 'When set to `true` the client will print protocol messages that it receives or sends to the server.'
+			description:
+				'When set to `true` the client will print protocol messages that it receives or sends to the server.',
 		},
 	];
 }
