@@ -9,6 +9,7 @@ export class NatsApi implements ICredentialType {
 	name = 'natsApi';
 
 	displayName = 'NATS API';
+	documentationUrl = 'https://docs.nats.io/nats-concepts/jetstream';
 
 	properties: INodeProperties[] = [
 		{
@@ -122,9 +123,12 @@ export class NatsApi implements ICredentialType {
 			},
 		},
 		{
+			// Despite the TLS key being confidential, setting this to be a password doesn't
+			// allow to copy multiple lines in the editor, breaking the TLS connection.
 			displayName: 'TLS Key',
 			name: 'tlsKey',
 			type: 'string',
+			// eslint-disable-next-line n8n-nodes-base/cred-class-field-type-options-password-missing
 			typeOptions: {
 				alwaysOpenEditWindow: true,
 				rows: 4,
