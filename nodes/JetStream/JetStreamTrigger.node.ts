@@ -12,6 +12,7 @@ import {
 
 import Container from 'typedi';
 import { NatsService } from '../Nats.service';
+import { AckPolicy } from 'nats';
 import { createNatsNodeMessage, NatsNodeMessageOptions } from '../Nats/actions/NATS';
 
 export class JetStreamTrigger implements INodeType {
@@ -55,12 +56,39 @@ export class JetStreamTrigger implements INodeType {
 				description: 'The name of the stream',
 			},
 			{
-				displayName: 'Consumer',
+				displayName: 'Auto-create Ephemeral Consumer',
+				name: 'autoCreateEphemeralConsumer',
+				type: 'boolean',
+				default: false,
+				description:
+					"Whether to automatically create an ephemeral pull consumer if the specified consumer doesn't exist or no name is provided.",
+			},
+			{
+				displayName: 'Consumer Name (Durable Only)',
 				name: 'consumer',
 				type: 'string',
 				default: '',
 				placeholder: 'consumer',
-				description: 'The name of the consumer',
+				description: 'The name of the existing, durable consumer',
+				displayOptions: {
+					show: {
+						autoCreateEphemeralConsumer: [false],
+					},
+				},
+			},
+			{
+				displayName: 'Filter Subject (Ephemeral Only)',
+				name: 'filterSubject',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g. orders.*',
+				description:
+					'Optional subject filter applied when auto-creating an ephemeral consumer (wildcards allowed).',
+				displayOptions: {
+					show: {
+						autoCreateEphemeralConsumer: [true],
+					},
+				},
 			},
 			{
 				displayName: 'Options',
@@ -75,13 +103,6 @@ export class JetStreamTrigger implements INodeType {
 						type: 'boolean',
 						default: false,
 						description: 'Whether to save the content as binary',
-					},
-					{
-						displayName: 'JSON Parse Body',
-						name: 'jsonParseBody',
-						type: 'boolean',
-						default: false,
-						description: 'Whether to parse the body to an object',
 					},
 					{
 						displayName: 'Message Acknowledge When',
@@ -146,8 +167,13 @@ export class JetStreamTrigger implements INodeType {
 
 	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
 		const stream = this.getNodeParameter('stream') as string;
-		const consumer = this.getNodeParameter('consumer') as string;
+		const consumer = this.getNodeParameter('consumer', '') as string;
 		const options = this.getNodeParameter('options', {}) as IDataObject & NatsNodeMessageOptions;
+		const autoCreateEphemeralConsumer = this.getNodeParameter(
+			'autoCreateEphemeralConsumer',
+			false,
+		) as boolean;
+		const filterSubject = this.getNodeParameter('filterSubject', '') as string;
 
 		let parallelMessages =
 			options.parallelMessages !== undefined && options.parallelMessages !== -1
@@ -169,7 +195,41 @@ export class JetStreamTrigger implements INodeType {
 
 		const nats = await Container.get(NatsService).getJetStream(this);
 
-		const jsConsumer = await nats.js.consumers.get(stream, consumer);
+		let consumerName = (consumer || '').trim();
+		let ephemeralCreated = false;
+		let jsm: Awaited<ReturnType<typeof nats.connection.jetstreamManager>> | undefined;
+
+		// If durable mode is selected (no auto-create), a consumer name must be provided
+		if (!autoCreateEphemeralConsumer && consumerName === '') {
+			throw new NodeOperationError(
+				this.getNode(),
+				"Consumer name is required when using a durable consumer. Either provide a 'Consumer Name' or enable 'Auto-create Ephemeral Consumer'.",
+			);
+		}
+
+		if (autoCreateEphemeralConsumer) {
+			try {
+				if (consumerName) {
+					await nats.js.consumers.get(stream, consumerName);
+				} else {
+					throw new Error('no-consumer-provided');
+				}
+			} catch (_) {
+				jsm = await nats.connection.jetstreamManager();
+				const cfg: any = {
+					// create a pull consumer with explicit ack
+					ack_policy: AckPolicy.Explicit,
+				};
+				if (filterSubject && filterSubject.trim() !== '') {
+					cfg.filter_subject = filterSubject.trim();
+				}
+				const ci = await jsm.consumers.add(stream, cfg);
+				consumerName = ci.name;
+				ephemeralCreated = true;
+			}
+		}
+
+		const jsConsumer = await nats.js.consumers.get(stream, consumerName);
 		const messages = await jsConsumer.consume({ max_messages: parallelMessages });
 
 		const consume = async () => {
@@ -223,6 +283,15 @@ export class JetStreamTrigger implements INodeType {
 
 		const closeFunction = async () => {
 			await messages.close(); //todo error handling
+			// If we created an ephemeral consumer, try to delete it
+			if (ephemeralCreated) {
+				try {
+					const m = jsm ?? (await nats.connection.jetstreamManager());
+					await m.consumers.delete(stream, consumerName);
+				} catch (e) {
+					// ignore cleanup errors
+				}
+			}
 			nats[Symbol.dispose]();
 		};
 

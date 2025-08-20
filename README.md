@@ -23,8 +23,9 @@ NATS Jetstream node:
 - Publish to a Nats JetStream
 
 NATS Jetstream trigger:
-- Receive message from a nats consumer subscription
-
+- Receive message from a NATS via consumer. Currently supports both durable consumers (pre-created) and ephemeral consumers.
+    - Durable consumer: Provide the existing consumer name. This consumer is created and managed outside of n8n.
+	- Ephemeral consumer: Enable “Auto-create Ephemeral Consumer” and optionally set a “Filter Subject”. The node will create a pull consumer on demand (and clean it up when stopped). The consumer name is only required for durable consumers.
 
 ## License
 
