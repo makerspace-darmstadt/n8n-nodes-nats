@@ -56,12 +56,11 @@ export class JetStreamTrigger implements INodeType {
 				description: 'The name of the stream',
 			},
 			{
-				displayName: 'Auto-create Ephemeral Consumer',
+				displayName: 'Auto-Create Ephemeral Consumer',
 				name: 'autoCreateEphemeralConsumer',
 				type: 'boolean',
 				default: false,
-				description:
-					"Whether to automatically create an ephemeral pull consumer if the specified consumer doesn't exist or no name is provided.",
+				description: 'Whether to automatically create an ephemeral pull consumer if the specified consumer doesn\'t exist or no name is provided',
 			},
 			{
 				displayName: 'Consumer Name (Durable Only)',
@@ -82,8 +81,7 @@ export class JetStreamTrigger implements INodeType {
 				type: 'string',
 				default: '',
 				placeholder: 'e.g. orders.*',
-				description:
-					'Optional subject filter applied when auto-creating an ephemeral consumer (wildcards allowed).',
+				description: 'Optional subject filter applied when auto-creating an ephemeral consumer (wildcards allowed)',
 				displayOptions: {
 					show: {
 						autoCreateEphemeralConsumer: [true],
@@ -212,7 +210,10 @@ export class JetStreamTrigger implements INodeType {
 				if (consumerName) {
 					await nats.js.consumers.get(stream, consumerName);
 				} else {
-					throw new Error('no-consumer-provided');
+					throw new NodeOperationError(
+						this.getNode(),
+						'Consumer name is required when using a durable consumer.',
+					);
 				}
 			} catch (_) {
 				jsm = await nats.connection.jetstreamManager();
